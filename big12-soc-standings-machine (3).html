@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026 Big 12 Soccer Standings Machine</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9bb4;
+      --accent: #3b82f6;
+      --win: #22c55e;
+      --draw: #eab308;
+      --loss: #ef4444;
+      --header: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      overflow: hidden;
+    }
+    body { padding: 0.9rem 1rem 1rem; }
+    .container { max-width: 920px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 0.85rem; }
+    header h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.2rem; }
+    header p { color: var(--muted); font-size: 0.82rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 0.85rem;
+    }
+    .card-header {
+      background: var(--header);
+      padding: 0.55rem 0.85rem;
+      font-weight: 600;
+      font-size: 0.84rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th {
+      text-align: left;
+      padding: 0.35rem 0.55rem;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+    }
+    th.num, td.num { text-align: center; }
+    td {
+      padding: 0.32rem 0.55rem;
+      border-bottom: 1px solid rgba(45,58,79,0.5);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(59,130,246,0.06); }
+    .rank { color: var(--muted); width: 3rem; min-width: 3rem; font-size: 0.78rem; white-space: nowrap; }
+    .team-name { font-weight: 560; }
+    .pts { font-weight: 700; color: var(--accent); }
+
+    tr.tourney td { background: rgba(34,197,94,0.08); }
+    tr.share td { background: rgba(234,179,8,0.12); }
+    tr.title td { background: rgba(234,179,8,0.28); }
+
+    .clinch {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      margin-left: 0.3rem;
+      padding: 0.08rem 0.3rem;
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+    .clinch-title { background: rgba(234,179,8,0.35); color: #fbbf24; }
+    .clinch-share { background: rgba(59,130,246,0.25); color: #60a5fa; }
+    .clinch-tourney { background: rgba(34,197,94,0.25); color: #4ade80; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,0.12);
+    }
+    .legend span { display: flex; align-items: center; gap: 0.25rem; }
+
+    .warning {
+      padding: 0.5rem 0.8rem;
+      background: rgba(234,179,8,0.1);
+      border: 1px solid rgba(234,179,8,0.3);
+      border-radius: 8px;
+      font-size: 0.74rem;
+      color: #fbbf24;
+      margin-bottom: 0.75rem;
+    }
+
+    .matchdays { padding: 0.55rem; }
+    .matchday {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 0.55rem;
+    }
+    .matchday:last-child { margin-bottom: 0; }
+    .matchday-title {
+      background: rgba(0,0,0,0.25);
+      padding: 0.3rem 0.65rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .match {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.35rem 0.55rem;
+      border-top: 1px solid rgba(45,58,79,0.4);
+    }
+    .side {
+      font-size: 0.76rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .side.away { text-align: right; }
+    .side.home { text-align: left; }
+    .result-btns { display: flex; gap: 0.15rem; flex-shrink: 0; }
+    .result-btns button {
+      width: 1.7rem;
+      height: 1.7rem;
+      min-width: 1.7rem;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.62rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+    .result-btns button:hover { border-color: #4b5e7a; color: var(--text); }
+    .result-btns button.active-win {
+      background: rgba(34,197,94,0.22);
+      border-color: var(--win);
+      color: var(--win);
+    }
+    .result-btns button.active-draw {
+      background: rgba(234,179,8,0.22);
+      border-color: var(--draw);
+      color: var(--draw);
+    }
+    .result-btns button.active-loss {
+      background: rgba(239,68,68,0.22);
+      border-color: var(--loss);
+      color: var(--loss);
+    }
+    .actions {
+      display: flex;
+      gap: 0.45rem;
+      padding: 0.5rem 0.75rem;
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+    }
+    .btn {
+      flex: 1;
+      padding: 0.4rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 550;
+      cursor: pointer;
+    }
+    .btn:hover { background: rgba(255,255,255,0.05); }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #2563eb; }
+    .note {
+      padding: 0.55rem 0.8rem;
+      background: rgba(59,130,246,0.08);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 8px;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+    .note strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>2026 Big 12 Soccer Standings Machine</h1>
+      <p>Through Matchday 9. Set remaining results to project final standings.</p>
+    </header>
+
+    <div class="warning">
+      ⚠ Conference tiebreakers (head-to-head, GD, etc.) are <strong>not</strong> factored in. Rankings use points → win % → wins → alphabetical. Tied teams shown as T-#.
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>Projected Standings</span>
+        <span id="games-played" style="font-size:0.72rem;color:var(--muted);font-weight:400"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>School</th>
+            <th class="num">W</th>
+            <th class="num">L</th>
+            <th class="num">D</th>
+            <th class="num">Pts</th>
+            <th class="num">PPG</th>
+          </tr>
+        </thead>
+        <tbody id="standings-body"></tbody>
+      </table>
+      <div class="legend">
+        <span><span class="clinch clinch-title">★</span> Outright title</span>
+        <span><span class="clinch clinch-share">☆</span> Share of title</span>
+        <span><span class="clinch clinch-tourney">T</span> Tournament top 8</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>Remaining Matches</span>
+        <span style="font-size:0.72rem;color:var(--muted);font-weight:400">Click A / D / H</span>
+      </div>
+      <div class="matchdays" id="matchdays"></div>
+      <div class="actions">
+        <button class="btn" onclick="resetAll()">Reset All</button>
+        <button class="btn btn-primary" onclick="randomize()">Randomize</button>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>How to use:</strong> Click <strong>A</strong> (Away win), <strong>D</strong> (Draw), or <strong>H</strong> (Home win). Row colors and symbols update automatically.
+    </div>
+  </div>
+
+  <script>
+    // Updated after BYU  win over Iowa State
+    const BASE = {
+      "Baylor":          { w: 7, l: 1, d: 1 },
+      "Texas Tech":      { w: 7, l: 1, d: 1 },
+      "Kansas":          { w: 6, l: 1, d: 2 },
+      "BYU":             { w: 6, l: 1, d: 2 },
+      "Houston":         { w: 6, l: 2, d: 1 },
+      "Colorado":        { w: 6, l: 3, d: 0 },
+      "UCF":             { w: 5, l: 3, d: 1 },
+      "West Virginia":   { w: 4, l: 4, d: 1 },
+      "Arizona":         { w: 2, l: 3, d: 4 },
+      "Arizona State":   { w: 3, l: 5, d: 1 },
+      "Oklahoma State":  { w: 2, l: 5, d: 2 },
+      "Cincinnati":      { w: 2, l: 5, d: 2 },
+      "Utah":            { w: 1, l: 5, d: 3 },
+      "TCU":             { w: 2, l: 7, d: 0 },
+      "Kansas State":    { w: 1, l: 7, d: 1 },
+      "Iowa State":      { w: 0, l: 7, d: 2 }
+    };
+
+    const MATCHDAYS = [
+      {
+        name: "Matchday 10",
+        matches: [
+          { away: "Oklahoma State", home: "Iowa State" },
+          { away: "TCU",            home: "West Virginia" },
+          { away: "UCF",            home: "Kansas State" },
+          { away: "Kansas",         home: "Houston" },
+          { away: "Baylor",         home: "Texas Tech" },
+          { away: "Cincinnati",     home: "Colorado" },
+          { away: "Utah",           home: "BYU" },
+          { away: "Arizona",        home: "Arizona State" }
+        ]
+      },
+      {
+        name: "Matchday 11",
+        matches: [
+          { away: "Iowa State",     home: "UCF" },
+          { away: "West Virginia",  home: "Cincinnati" },
+          { away: "Texas Tech",     home: "Kansas" },
+          { away: "Houston",        home: "Baylor" },
+          { away: "Arizona",        home: "TCU" },
+          { away: "Kansas State",   home: "Utah" },
+          { away: "Oklahoma State", home: "Colorado" },
+          { away: "Arizona State",  home: "BYU" }
+        ]
+      }
+    ];
+
+    let results = MATCHDAYS.map(md => md.matches.map(() => null));
+
+    function getRemainingGames() {
+      const rem = {};
+      for (const t of Object.keys(BASE)) rem[t] = 0;
+      MATCHDAYS.forEach((md, mi) => {
+        md.matches.forEach((m, fi) => {
+          if (results[mi][fi] === null) {
+            rem[m.away]++;
+            rem[m.home]++;
+          }
+        });
+      });
+      return rem;
+    }
+
+    function computeStandings() {
+      const stats = {};
+      for (const [team, rec] of Object.entries(BASE)) {
+        stats[team] = { w: rec.w, l: rec.l, d: rec.d };
+      }
+      MATCHDAYS.forEach((md, mi) => {
+        md.matches.forEach((m, fi) => {
+          const r = results[mi][fi];
+          if (!r) return;
+          if (r === "A") { stats[m.away].w++; stats[m.home].l++; }
+          else if (r === "H") { stats[m.home].w++; stats[m.away].l++; }
+          else if (r === "D") { stats[m.away].d++; stats[m.home].d++; }
+        });
+      });
+      return Object.entries(stats).map(([team, s]) => {
+        const gp = s.w + s.l + s.d;
+        const pts = s.w * 3 + s.d;
+        const pct = gp > 0 ? (s.w + s.d * 0.5) / gp : 0;
+        const ppg = gp > 0 ? pts / gp : 0;
+        return { team, ...s, gp, pts, pct, ppg };
+      }).sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.pct !== a.pct) return b.pct - a.pct;
+        if (b.w !== a.w) return b.w - a.w;
+        return a.team.localeCompare(b.team);
+      });
+    }
+
+    function assignRanks(standings) {
+      const ranks = [];
+      let i = 0;
+      while (i < standings.length) {
+        let j = i;
+        while (j < standings.length && standings[j].pts === standings[i].pts) j++;
+        const rankNum = i + 1;
+        const isTie = (j - i) > 1;
+        for (let k = i; k < j; k++) {
+          ranks.push(isTie ? "T-" + rankNum : String(rankNum));
+        }
+        i = j;
+      }
+      return ranks;
+    }
+
+    function computeClinch(standings) {
+      const rem = getRemainingGames();
+      const clinch = {};
+      for (const s of standings) {
+        const maxPts = s.pts + 3 * (rem[s.team] || 0);
+        const minPts = s.pts;
+        clinch[s.team] = { max: maxPts, min: minPts, title: false, share: false, tourney: false };
+      }
+
+      for (const s of standings) {
+        const myMin = clinch[s.team].min;
+        let outright = true;
+        let share = true;
+        for (const o of standings) {
+          if (o.team === s.team) continue;
+          if (clinch[o.team].max > myMin) { outright = false; share = false; }
+          else if (clinch[o.team].max === myMin) { outright = false; }
+        }
+
+        let canReachOrBeat = 0;
+        for (const o of standings) {
+          if (clinch[o.team].max >= myMin) canReachOrBeat++;
+        }
+        const tourney = canReachOrBeat <= 8;
+
+        clinch[s.team].title = outright;
+        clinch[s.team].share = share && !outright;
+        clinch[s.team].tourney = tourney;
+      }
+      return clinch;
+    }
+
+    function setResult(mi, fi, value) {
+      if (results[mi][fi] === value) results[mi][fi] = null;
+      else results[mi][fi] = value;
+      render();
+    }
+
+    function resetAll() {
+      results = MATCHDAYS.map(md => md.matches.map(() => null));
+      render();
+    }
+
+    function randomize() {
+      const opts = ["A", "D", "H"];
+      results = MATCHDAYS.map(md => md.matches.map(() => opts[Math.floor(Math.random() * 3)]));
+      render();
+    }
+
+    function renderStandings() {
+      const standings = computeStandings();
+      const ranks = assignRanks(standings);
+      const clinch = computeClinch(standings);
+      const tbody = document.getElementById("standings-body");
+      if (!tbody) return;
+      tbody.innerHTML = standings.map((s, i) => {
+        const c = clinch[s.team];
+        let rowClass = "";
+        if (c.title) rowClass = "title";
+        else if (c.share) rowClass = "share";
+        else if (c.tourney || i < 8) rowClass = "tourney";
+
+        let badges = "";
+        if (c.title) badges += '<span class="clinch clinch-title" title="Outright Big 12 title clinched">★</span>';
+        else if (c.share) badges += '<span class="clinch clinch-share" title="Share of title clinched">☆</span>';
+        if (c.tourney) badges += '<span class="clinch clinch-tourney" title="Big 12 Tournament (top 8) clinched">T</span>';
+
+        return `
+          <tr class="${rowClass}">
+            <td class="rank">${ranks[i]}</td>
+            <td class="team-name">${s.team}${badges}</td>
+            <td class="num">${s.w}</td>
+            <td class="num">${s.l}</td>
+            <td class="num">${s.d}</td>
+            <td class="num pts">${s.pts}</td>
+            <td class="num">${s.ppg.toFixed(2)}</td>
+          </tr>
+        `;
+      }).join("");
+      const decided = results.flat().filter(r => r !== null).length;
+      const total = results.flat().length;
+      const gpEl = document.getElementById("games-played");
+      if (gpEl) gpEl.textContent = decided + " / " + total + " results set";
+    }
+
+    function renderMatches() {
+      const container = document.getElementById("matchdays");
+      if (!container) return;
+      container.innerHTML = MATCHDAYS.map((md, mi) => `
+        <div class="matchday">
+          <div class="matchday-title">${md.name}</div>
+          ${md.matches.map((m, fi) => {
+            const r = results[mi][fi];
+            return `
+              <div class="match">
+                <div class="side away">${m.away}</div>
+                <div class="result-btns">
+                  <button class="${r === 'A' ? 'active-win' : ''}" onclick="setResult(${mi},${fi},'A')" title="Away win">A</button>
+                  <button class="${r === 'D' ? 'active-draw' : ''}" onclick="setResult(${mi},${fi},'D')" title="Draw">D</button>
+                  <button class="${r === 'H' ? 'active-loss' : ''}" onclick="setResult(${mi},${fi},'H')" title="Home win">H</button>
+                </div>
+                <div class="side home">${m.home}</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `).join("");
+    }
+
+    function render() {
+      renderStandings();
+      renderMatches();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", render);
+    } else {
+      render();
+    }
+  </script>
+</body>
+</html>
